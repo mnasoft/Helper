@@ -1,0 +1,106 @@
+# source $env(TCL_HOME)/ICEM/MnasIcemUtils/delete_family.tcl
+
+package require PkgLoader 1.0
+
+mmsg_start
+
+package provide MnasIcemUtils 1.0
+
+## * Команды [[file:../delete_family.tcl]]
+
+## - =del_part= {part} :: Удаляет семейство безвозвранто.
+proc del_part {part} {
+    ic_undo_group_begin
+    ic_start_bigunsop
+    ic_delete_elements family $part no_undo 1
+    ic_delete_geometry all families $part 1 1
+    ic_geo_delete_family $part
+    ic_finish_bigunsop 
+    ic_undo_group_end
+}
+
+## - =parts= {types} :: Возвращает список семейств, в которых
+##   присутствуют бъекты типов types.
+proc parts {types} {
+    set x {}
+    foreach type $types {
+        foreach object [ic_geo_get_objects $type] {
+            lappend x [ic_geo_get_family $type $object] } }
+    return [lsort -unique $x] }
+
+## - =parts_print= {types} :: Печатает в консоль tcl имена частей,
+##   которые содержат объекты типа types.
+proc parts_print {types} {
+    mmsg "\n\n\n(defparameter *$types*\n'("
+    foreach i [parts $types] {
+        mmsg "\"$i\"\n" }
+    mmsg "))\n\n\n"}
+
+## - =del_asm= {assembles} :: Удаляет семейства и все входящие в них
+##   объекты если имя семейства удовлетворяет хотя бы одному шаблону из
+##   списка шаблонов, передаваемых в аргументе assembles.
+proc del_asm {assembles} {
+    mmsg "Deleting domain $assembles ..." 
+    foreach assembly $assembles {
+        foreach part [parts {body point curve surface}] {
+            if {[regexp $assembly $part]} then {
+                del_part $part } } }
+    mmsg "DONE.\n" }
+
+## - =part_parents= {part} :: Возвращает список родительских семейств
+##   для части part.
+proc part_parents {part} {
+    set x {}
+    set p $part
+    while { $p != {} } {
+        lappend x $p    
+        set p [path_name $p] }
+    return $x }
+
+## - =parts_parents= {part} :: Возвращает список родительских семейств
+##   для семейств из списка parts.
+proc parts_parents {parts} {
+    set x {}
+    foreach part $parts {
+        foreach p [part_parents $part] {
+            lappend x $p } }
+    return [lsort -unique $x] }
+
+## - =not_empty_parts= {} :: Возвращает непустые семейства.
+proc not_empty_parts {} {
+    set not_empty {}
+    foreach  family [ic_geo_list_families] {
+        if {[ic_geo_family_is_empty $family] == 0} then {
+            lappend not_empty $family } }
+    return $not_empty }
+
+## - =not_empty_parents= {} :: Возвращает непустые семейства и их родителей.
+proc not_empty_parents {} {
+    set x {}
+    foreach fam [not_empty_parts]  {
+        foreach fam [part_parents $fam] {
+            lappend x $fam } }
+    return [lsort -unique $x] }
+
+## - =empty_parents= {} :: Возвращает пустые семейства и их родителей.
+proc empty_parents {} {
+    set x {}
+    set not_empty_parents [not_empty_parents]
+    foreach  family [ic_geo_list_families] {
+        if {[lsearch -exact $not_empty_parents $family] == -1} then {
+            lappend x $family } }
+    return [lsort -unique $x] }
+
+## - =clear_all= {} :: Удаляет все неиспользуемае семейства и их предков. 
+proc clear_all {} {
+    foreach family [empty_parents] {
+        ic_geo_delete_family $family } }
+
+####################################################################################################
+
+# ic_geo_list_families
+# ic_geo_family_is_empty
+# ic_geo_family_is_empty DG1/B1/AIR_RL_OUT/N2/D_05.000
+# clear_all
+
+mmsg_finish

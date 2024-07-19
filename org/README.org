@@ -1,0 +1,27 @@
+* Назначение
+Проект =Helper= содержит функции для поиска имен функций.
+
+* Установка
+Инструкции по установке см. [[../../IcemStartup/org/README.org][IcemStartup]].
+
+* Извлечение документации из исходников  
+Извлечение документации из исходников выполняется при помощи
+следующего кода <<tcl-to-org>>.
+
+#+caption: Выбор документации из исходных файлов 
+#+name: tcl-to-org
+#+begin_src sh :exports both
+  mkdir -p ../ext
+  cd ../ext
+  for i in `find ../ -name *.tcl`
+  do
+      doc_extractor.sh $i
+  done
+#+end_src
+
+#+RESULTS: tcl-to-org
+
+
+* Генерирование документации
+Для получения инструкций по автоматическому генерированию документации
+см. [[./publish/publish.org][publish.org]]
